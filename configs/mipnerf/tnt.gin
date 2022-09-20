@@ -1,0 +1,21 @@
+### LLFF Specific Arguments
+
+run.dataset_name = "tanks_and_temples"
+run.datadir = "data/tanks_and_temples"
+
+LitData.batch_sampler = "all_images"
+
+## MipNeRF Standard Specific Arguments
+
+run.model_name = "mipnerf"
+run.max_steps = 1000000
+run.log_every_n_steps = 100
+
+LitData.load_radii = True
+LitData.batch_size = 4096
+LitData.chunk = 8192
+LitData.use_pixel_centers = True
+LitData.epoch_size = 250000
+
+LitDataTnT.cam_scale_factor = 0.125
+MipNeRF.density_noise = 1.

@@ -1,0 +1,25 @@
+### LLFF Specific Arguments
+
+run.dataset_name = "llff"
+run.datadir = "data/llff"
+
+LitData.batch_sampler = "all_images"
+
+## MipNeRF360 Standard Specific Arguments
+
+run.model_name = "mipnerf360"
+run.max_steps = 1000000
+run.log_every_n_steps = 100
+
+LitData.load_radii = True
+LitData.batch_size = 4096
+LitData.chunk = 4096
+LitData.use_pixel_centers = True
+LitData.epoch_size = 250000
+
+LitDataLLFF.near = 0.2
+LitDataLLFF.far = 1e6
+
+MipNeRF360.opaque_background = True
+
+run.grad_max_norm = 0.001

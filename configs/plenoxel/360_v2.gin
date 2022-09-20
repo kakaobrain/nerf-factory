@@ -1,0 +1,37 @@
+
+### TNT Specific
+
+run.dataset_name = "nerf_360_v2"
+run.datadir = "data/nerf_360_v2"
+
+LitPlenoxel.reso = [[128, 128, 128], [256, 256, 256], [512, 512, 512]]
+LitPlenoxel.background_nlayers = 64
+LitPlenoxel.background_reso = 1024
+LitPlenoxel.lr_sigma = 3.0e+1
+LitPlenoxel.lr_sh = 1.0e-2
+LitPlenoxel.lr_sigma_delay_steps = 15000
+LitPlenoxel.weight_thresh = 1.28
+LitPlenoxel.thresh_type = "weight"
+LitPlenoxel.lambda_tv = 5.0e-3
+LitPlenoxel.lambda_tv_sh = 5.0e-3
+LitPlenoxel.lambda_tv_background_color = 1.0e-3
+LitPlenoxel.lambda_tv_background_color = 1.0e-3
+LitPlenoxel.lambda_beta = 1.0e-5
+LitPlenoxel.lambda_sparsity = 1.0e-11
+LitPlenoxel.background_brightness = 0.5
+LitPlenoxel.tv_early_only = 0
+LitPlenoxel.lr_fg_begin_step = 1000
+LitPlenoxel.near_clip = 0.35
+
+ResampleCallBack.upsamp_every = 25600
+run.max_steps = 76800
+
+### Plenoxel Specific
+
+LitData.batch_sampler = "all_images"
+LitData.epoch_size = 25600
+LitData.batch_size = 5000
+LitData.chunk = 8192
+LitData.use_pixel_centers = True
+
+run.model_name = "plenoxel"

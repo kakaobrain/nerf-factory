@@ -1,0 +1,22 @@
+### LLFF Specific Arguments
+
+run.dataset_name = "llff"
+run.datadir = "data/llff"
+
+LitData.batch_sampler = "all_images"
+LitData.ndc_coord = True
+
+## MipNeRF Standard Specific Arguments
+
+run.model_name = "mipnerf"
+run.max_steps = 1000000
+run.log_every_n_steps = 100
+
+LitData.load_radii = True
+LitData.batch_size = 4096
+LitData.chunk = 8192
+LitData.use_pixel_centers = True
+LitData.epoch_size = 250000
+
+MipNeRF.ray_shape = "cylinder"
+MipNeRF.density_noise = 1.

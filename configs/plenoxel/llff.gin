@@ -1,0 +1,33 @@
+
+### LLFF Specific
+
+run.dataset_name = "llff"
+run.datadir = "data/llff"
+run.logbase = "logs"
+
+LitData.ndc_coord = True
+
+LitPlenoxel.reso = [[256, 256, 256], [512, 512, 512], [1408, 1156, 128]]
+LitPlenoxel.lr_sigma = 3.0e+1
+LitPlenoxel.lr_sh = 1.0e-2
+LitPlenoxel.lambda_tv = 5.0e-4
+LitPlenoxel.density_thresh = 5.0
+LitPlenoxel.thresh_type = "sigma"
+LitPlenoxel.lambda_tv_sh = 5.0e-3
+LitPlenoxel.lambda_sparsity = 1.0e-12
+LitPlenoxel.background_brightness = 0.5
+LitPlenoxel.tv_early_only = 0
+LitPlenoxel.last_sample_opaque = False
+
+ResampleCallBack.upsamp_every = 38400
+run.max_steps = 153600
+
+### Plenoxel Specific Arguments
+
+LitData.batch_sampler = "all_images"
+LitData.epoch_size = 38400
+LitData.batch_size = 5000
+LitData.chunk = 8192
+LitData.use_pixel_centers = True
+
+run.model_name = "plenoxel"

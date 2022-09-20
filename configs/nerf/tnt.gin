@@ -1,0 +1,22 @@
+### TnT Specific Arguments
+
+run.dataset_name = "tanks_and_temples"
+run.datadir = "data/tanks_and_temples"
+
+LitData.batch_sampler = "all_images"
+LitDataTnT.cam_scale_factor = 0.125
+
+### NeRF Standard Specific Arguments
+
+NeRF.num_coarse_samples = 128
+NeRF.num_fine_samples = 256
+NeRF.noise_std = 1.
+
+LitData.batch_size = 4096
+LitData.chunk = 8192
+LitData.use_pixel_centers = True
+LitData.epoch_size = 250000
+
+run.max_steps = 1000000
+run.log_every_n_steps = 100
+run.model_name = "nerf"

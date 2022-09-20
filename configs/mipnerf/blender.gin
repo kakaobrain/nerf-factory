@@ -1,0 +1,20 @@
+### Blender Specific Arguments
+
+run.dataset_name = "blender"
+run.datadir = "data/blender"
+
+LitData.batch_sampler = "single_image"
+LitDataBlender.white_bkgd = True
+
+## MipNeRF Standard Specific Arguments
+
+
+run.model_name = "mipnerf"
+run.max_steps = 1000000
+run.log_every_n_steps = 100
+
+LitData.load_radii = True
+LitData.batch_size = 4096
+LitData.chunk = 8192
+LitData.use_pixel_centers = True
+LitData.epoch_size = 250000

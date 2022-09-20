@@ -1,0 +1,25 @@
+### Blender Specific Arguments
+
+run.dataset_name = "blender"
+run.datadir = "data/blender"
+
+LitData.batch_sampler = "dynamic_all_images"
+
+### NeRF Standard Specific Arguments
+
+LitData.needs_train_info = True
+LitData.batch_size = 4096
+LitData.chunk = 32768
+LitData.use_pixel_centers = True
+LitData.epoch_size = 25000
+LitDataBlender.white_bkgd = True
+
+run.max_steps = 25000
+run.log_every_n_steps = 100
+run.progressbar_refresh_rate = 100
+run.model_name = "dvgo"
+run.save_last = False
+
+MultipleImageDynamicDDPSampler.N_coarse = 5000
+LitDVGO.model_type = "dvgo"
+LitDVGO.ray_masking = True

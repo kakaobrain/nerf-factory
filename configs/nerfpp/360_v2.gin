@@ -1,0 +1,23 @@
+### 360-v2 Specific Arguments
+
+run.dataset_name = "nerf_360_v2"
+run.datadir = "data/nerf_360_v2"
+
+LitData.batch_sampler = "all_images"
+
+## NeRF++ Standard Specific Arguments
+
+run.model_name = "nerfpp"
+
+run.max_steps = 1000000
+run.log_every_n_steps = 100
+
+LitData.load_radii = True
+LitData.batch_size = 4096
+LitData.chunk = 8192
+LitData.use_pixel_centers = True
+LitData.epoch_size = 250000
+
+NeRFPP.density_noise = 1.
+LitDataNeRF360V2.strict_scaling = True
+

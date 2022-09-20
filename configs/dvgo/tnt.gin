@@ -1,0 +1,39 @@
+### TnT Specific Arguments
+
+run.dataset_name = "tanks_and_temples"
+run.datadir = "data/tanks_and_temples"
+
+LitData.batch_sampler = "all_images"
+
+### NeRF Standard Specific Arguments
+
+LitData.needs_train_info = True
+LitData.batch_size = 4096
+LitData.chunk = 4096
+LitData.use_pixel_centers = True
+LitData.epoch_size = 30000
+LitData.use_near_clip = True
+
+run.max_steps = 30000
+run.log_every_n_steps = 100
+run.progressbar_refresh_rate = 100
+run.model_name = "dvgo"
+
+LitDVGO.bbox_type="unbounded_inward"
+LitDVGO.model_type="dcvgo"
+LitDVGO.N_iters_coarse=0
+LitDVGO.N_rand_fine=4096
+LitDVGO.weight_distortion_fine=0.01
+LitDVGO.pg_scale_fine=[1000,2000,3000,4000,5000,6000,7000]
+LitDVGO.tv_before_fine=1e9
+LitDVGO.tv_dense_before_fine=10000
+LitDVGO.weight_tv_density_fine=1e-6
+LitDVGO.weight_tv_k0_fine=1e-7
+
+LitDVGO.num_voxels_fine = 32768000
+LitDVGO.num_voxels_base_fine = 32768000
+LitDVGO.alpha_init_fine = 1e-4
+LitDVGO.stepsize_fine = 0.5
+LitDVGO.fast_color_thres_fine = "outdoor_default"
+LitDVGO.world_bound_scale_fine = 1.
+LitDVGO.contracted_norm_fine = "l2"

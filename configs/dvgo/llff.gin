@@ -1,0 +1,39 @@
+### LLFF Specific Arguments
+
+run.dataset_name = "llff"
+run.datadir = "data/llff"
+
+LitData.batch_sampler = "all_images"
+LitData.ndc_coord = True
+
+### NeRF Standard Specific Arguments
+
+LitData.needs_train_info = True
+LitData.batch_size = 4096
+LitData.chunk = 4096
+LitData.use_pixel_centers = True
+LitData.epoch_size = 30000
+
+run.max_steps = 30000
+run.log_every_n_steps = 100
+run.progressbar_refresh_rate = 100
+run.model_name = "dvgo"
+
+LitDVGO.model_type = "dmpigo"
+LitDVGO.N_iters_coarse = 0
+LitDVGO.weight_distortion_fine = 0.01
+LitDVGO.pg_scale_fine = [2000, 4000, 6000, 8000]
+LitDVGO.decay_after_scale_fine = 0.1
+LitDVGO.tv_before_fine = 1e9
+LitDVGO.tv_dense_before_fine = 10000
+LitDVGO.weight_tv_density_fine = 1e-5
+LitDVGO.weight_tv_k0_fine = 1e-6
+
+LitDVGO.num_voxels_fine = 37748736
+LitDVGO.mpi_depth_fine = 256
+LitDVGO.stepsize_fine = 1.0
+LitDVGO.rgbnet_dim_fine = 9
+LitDVGO.rgbnet_width_fine = 64
+LitDVGO.world_bound_scale_fine =1.
+LitDVGO.fast_color_thres_fine = 0.00078125
+LitDVGO.rand_bkgd = True

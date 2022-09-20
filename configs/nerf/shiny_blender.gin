@@ -1,0 +1,22 @@
+### Shiny Blender Specific Arguments
+
+run.dataset_name = "shiny_blender"
+run.datadir = "data/refnerf"
+
+LitData.batch_sampler = "all_images"
+LitDataShinyBlender.white_bkgd = True
+
+### NeRF Standard Specific Arguments
+
+NeRF.num_coarse_samples = 64
+NeRF.num_fine_samples = 128
+
+LitData.batch_size = 4096
+LitData.chunk = 8192
+LitData.use_pixel_centers = True
+LitData.epoch_size = 250000
+LitDataBlender.white_bkgd = True
+
+run.max_steps = 1000000
+run.log_every_n_steps = 100
+run.model_name = "nerf"
