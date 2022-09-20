@@ -1,0 +1,41 @@
+.before,
+.after {
+  margin: 0;
+}
+
+.before figcaption,
+.after figcaption {
+  background: #fff;
+  color: #2e3452;
+  opacity: 0.8;
+  padding: 12px;
+  position: absolute;
+  top: 10%;
+  transform: translateY(-50%);
+  line-height: 100%;
+  font-size: 18px;
+}
+
+.before figcaption {
+  left: 12px;
+}
+
+.after figcaption {
+  right: 12px;
+}
+
+select {
+	margin: 0 auto;
+	color: #000000;
+	width: 160px;
+	height: 25px;
+	cursor: pointer;
+	text-align-last: center;
+	text-align: center;
+	-ms-text-align-last: center;
+	-moz-text-align-last: center;
+}
+
+input {
+  width: 180px;
+}
