@@ -41,7 +41,7 @@ We also provide convenient visualizers for NeRF researchers.
 
 
 ## Contributor
-This project is created and maintained by Yoonwoo Jeong, Seungjoo Shin, and Kibaek Park.
+This project is created and maintained by [Yoonwoo Jeong](https://github.com/jeongyw12382), [Seungjoo Shin](https://github.com/seungjooshin), and [Kibaek Park](https://github.com/parkkibaek).
 
 ## Requirements
 ```
@@ -131,3 +131,8 @@ How to add the custom dataset and the custom model in NeRF-Factory?
 - Implement a custom model's helper code on ```./src/model/[custom_model]/helper.py```.
 - [Optional] If you need more code files for the custom model, you can add them in ```./src/model/[custom_model]/```.- Add option of selecting the custom model on the function ```def select_model()``` of ```./utils/select_option.py```.
 - Add gin config file for each model as ```./configs/[custom_model]/[dataset].gin```.
+
+### License
+
+Copyright (c) 2022 POSTECH, KAIST, Kakao Brain Corp. All Rights Reserved.
+Licensed under the Apache License, Version 2.0 (see [LICENSE](https://github.com/kakaobrain/NeRF-Factory/tree/main/LICENSE) for details)
