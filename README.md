@@ -134,5 +134,5 @@ How to add the custom dataset and the custom model in NeRF-Factory?
 
 ### License
 
-Copyright (c) 2022 POSTECH, KAIST, Kakao Brain Corp. All Rights Reserved.
+Copyright (c) 2022 POSTECH, KAIST, and Kakao Brain Corp. All Rights Reserved.
 Licensed under the Apache License, Version 2.0 (see [LICENSE](https://github.com/kakaobrain/NeRF-Factory/tree/main/LICENSE) for details)
