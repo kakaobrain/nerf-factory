@@ -427,8 +427,8 @@ class LitMipNeRF360(LitModel):
         )
         rgb = rendered_results[-1]["rgb"]
         target = batch["target"]
-        ret["target"] = target
-        ret["rgb"] = rgb
+        ret["target"] = target.cpu()
+        ret["rgb"] = rgb.cpu()
         return ret
 
     def validation_step(self, batch, batch_idx):

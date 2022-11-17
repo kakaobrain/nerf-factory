@@ -370,8 +370,8 @@ class LitRefNeRF(LitModel):
         )
         rgb_fine = rendered_results[1]["comp_rgb"]
         target = batch["target"]
-        ret["target"] = target
-        ret["rgb"] = rgb_fine
+        ret["target"] = target.cpu()
+        ret["rgb"] = rgb_fine.cpu()
         return ret
 
     def validation_step(self, batch, batch_idx):
