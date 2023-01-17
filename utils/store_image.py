@@ -22,7 +22,7 @@ def norm8b(x):
 
 def store_image(dirpath, rgbs):
     for (i, rgb) in enumerate(rgbs):
-        imgname = f"image{str(i).zfill(3)}.jpg"
+        imgname = f"image{str(i).zfill(3)}.png"
         rgbimg = Image.fromarray(to8b(rgb.detach().cpu().numpy()))
         imgpath = os.path.join(dirpath, imgname)
         rgbimg.save(imgpath)
