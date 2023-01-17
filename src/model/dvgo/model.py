@@ -519,9 +519,9 @@ class LitDVGO(LitModel):
             rays_o, rays_d, viewdirs, is_train=False, **self.get_render_kwargs()
         )
 
-        ret["rgb"] = render_result["rgb_marched"]
+        ret["rgb"] = render_result["rgb_marched"].cpu()
         if "target" in batch:
-            ret["target"] = target
+            ret["target"] = target.cpu()
         return ret
 
     def validation_step(self, batch, batch_idx):
