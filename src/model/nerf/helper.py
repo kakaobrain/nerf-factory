@@ -25,7 +25,7 @@ def mse2psnr(x):
 def cast_rays(t_vals, origins, directions):
     return origins[..., None, :] + t_vals[..., None] * directions[..., None, :]
 
-
+# coarse mlp 에서의 sampling
 def sample_along_rays(
     rays_o,
     rays_d,
@@ -36,6 +36,8 @@ def sample_along_rays(
     lindisp,
 ):
     bsz = rays_o.shape[0]
+
+    # 균일하게 point 생성
     t_vals = torch.linspace(0.0, 1.0, num_samples + 1, device=rays_o.device)
     if lindisp:
         t_vals = 1.0 / (1.0 / near * (1.0 - t_vals) + 1.0 / far * t_vals)
@@ -67,6 +69,8 @@ def volumetric_rendering(rgb, density, t_vals, dirs, white_bkgd):
 
     eps = 1e-10
 
+    # dist : 두 점 사이의 거리
+    # 마지막 값은 imaginary background 와의 infinite 거리
     dists = torch.cat(
         [
             t_vals[..., 1:] - t_vals[..., :-1],
@@ -74,8 +78,12 @@ def volumetric_rendering(rgb, density, t_vals, dirs, white_bkgd):
         ],
         dim=-1,
     )
+    #실제 거리로 만듦
     dists = dists * torch.norm(dirs[..., None, :], dim=-1)
+    
+    # alpha : 투과도
     alpha = 1.0 - torch.exp(-density[..., 0] * dists)
+
     accum_prod = torch.cat(
         [
             torch.ones_like(alpha[..., :1]),
@@ -86,6 +94,7 @@ def volumetric_rendering(rgb, density, t_vals, dirs, white_bkgd):
 
     weights = alpha * accum_prod
 
+    # 최종 색 렌더링
     comp_rgb = (weights[..., None] * rgb).sum(dim=-2)
     depth = (weights * t_vals).sum(dim=-1)
     acc = weights.sum(dim=-1)
@@ -140,7 +149,7 @@ def sorted_piecewise_constant_pdf(
 
     return samples
 
-
+# fine_mlp 에서 사용하는 샘플링 함수
 def sample_pdf(bins, weights, origins, directions, t_vals, num_samples, randomized):
 
     t_samples = sorted_piecewise_constant_pdf(

@@ -48,23 +48,35 @@ class NeRFMLP(nn.Module):
         super(NeRFMLP, self).__init__()
 
         self.net_activation = nn.ReLU()
-        pos_size = ((max_deg_point - min_deg_point) * 2 + 1) * input_ch
+        # max_deg_point = 10, min_deg_point = 0
+        # https://nuggy875.tistory.com/168 의 3.Model 참고
+        # position size = 63, 첫번째 layer 의 dimension
+        # PE를 통해 (x,y,z) 가 63차원으로 확장됨
+        pos_size = ((max_deg_point - min_deg_point) * 2 + 1) * input_ch    
+        # view_pos_size = 27
+        # input ray direction 의 dimension
         view_pos_size = (deg_view * 2 + 1) * input_ch_view
 
+        # 첫 번째 layer, (x,y,z 를 입력받음)
         init_layer = nn.Linear(pos_size, netwidth)
         init.xavier_uniform_(init_layer.weight)
         pts_linear = [init_layer]
 
+        # 8개의 linear layer
         for idx in range(netdepth - 1):
             if idx % skip_layer == 0 and idx > 0:
+                # 4번째 layer에는 (x,y,z) 가 한 번 더 입력됨
                 module = nn.Linear(netwidth + pos_size, netwidth)
             else:
                 module = nn.Linear(netwidth, netwidth)
             init.xavier_uniform_(module.weight)
             pts_linear.append(module)
 
+        # 이 pts_linears 에서 density 예측은 완료됨
         self.pts_linears = nn.ModuleList(pts_linear)
 
+        # color 예측을 위한 추가 layers
+        # view direction 정보가 추가로 입력됨
         views_linear = [nn.Linear(netwidth + view_pos_size, netwidth_condition)]
         for idx in range(netdepth_condition - 1):
             layer = nn.Linear(netwidth_condition, netwidth_condition)
@@ -74,6 +86,8 @@ class NeRFMLP(nn.Module):
         self.views_linear = nn.ModuleList(views_linear)
 
         self.bottleneck_layer = nn.Linear(netwidth, netwidth)
+
+        # density, rgh 예측을 위한 차원 축소 layer
         self.density_layer = nn.Linear(netwidth, num_density_channels)
         self.rgb_layer = nn.Linear(netwidth_condition, num_rgb_channels)
 
@@ -82,13 +96,18 @@ class NeRFMLP(nn.Module):
         init.xavier_uniform_(self.rgb_layer.weight)
 
     def forward(self, x, condition):
-
+        
+        # x = (batch_size, num_samples, feature dimension)
         num_samples, feat_dim = x.shape[1:]
+        # x = (batch_size * num_samples, feature dimension)
         x = x.reshape(-1, feat_dim)
         inputs = x
+
         for idx in range(self.netdepth):
+            # linear + RELU 반복
             x = self.pts_linears[idx](x)
             x = self.net_activation(x)
+            # 4번째에는 input을 한 번 더 입력
             if idx % self.skip_layer == 0 and idx > 0:
                 x = torch.cat([x, inputs], dim=-1)
 
@@ -130,16 +149,22 @@ class NeRF(nn.Module):
 
         super(NeRF, self).__init__()
 
-        self.rgb_activation = nn.Sigmoid()
+        self.rgb_activation = nn.Sigmoid()  
         self.sigma_activation = nn.ReLU()
+        # coarse_mlp : 기본적인 모델
+        # deg = degree
         self.coarse_mlp = NeRFMLP(min_deg_point, max_deg_point, deg_view)
+        # fine_mlp : dense 를 고려한 sampling 을 고려한 모델 
         self.fine_mlp = NeRFMLP(min_deg_point, max_deg_point, deg_view)
 
     def forward(self, rays, randomized, white_bkgd, near, far):
 
         ret = []
         for i_level in range(self.num_levels):
+            # i_level 이 0 이면 coarse 를 사용하고, 1이면 fine을 사용
             if i_level == 0:
+                # ray를 따라 균등한 샘플링
+                # near 와 far 사이를 균등하게 나눈 
                 t_vals, samples = helper.sample_along_rays(
                     rays_o=rays["rays_o"],
                     rays_d=rays["rays_d"],
@@ -152,7 +177,9 @@ class NeRF(nn.Module):
                 mlp = self.coarse_mlp
 
             else:
+                # TODO: t_mids 의 의미는 sample_pdf 함수를 봐야 알 수 있을 듯
                 t_mids = 0.5 * (t_vals[..., 1:] + t_vals[..., :-1])
+                # dense pdf 에 따른 샘플링
                 t_vals, samples = helper.sample_pdf(
                     bins=t_mids,
                     weights=weights[..., 1:-1],
@@ -163,27 +190,33 @@ class NeRF(nn.Module):
                     randomized=randomized,
                 )
                 mlp = self.fine_mlp
-
+            
+            # PE, (x,y,z) -> 64차원, (viewdir) -> 27차원
             samples_enc = helper.pos_enc(
                 samples,
                 self.min_deg_point,
                 self.max_deg_point,
             )
             viewdirs_enc = helper.pos_enc(rays["viewdirs"], 0, self.deg_view)
-
+            
+            # mlp run
+            # 학습에 사용되는 것은 sample points 와 view_directions
             raw_rgb, raw_sigma = mlp(samples_enc, viewdirs_enc)
 
             if self.noise_std > 0 and randomized:
                 raw_sigma = raw_sigma + torch.rand_like(raw_sigma) * self.noise_std
-
+            
+            # 색과 density 를 예측
             rgb = self.rgb_activation(raw_rgb)
             sigma = self.sigma_activation(raw_sigma)
 
+            # 볼륨 렌더링
             comp_rgb, acc, weights = helper.volumetric_rendering(
                 rgb,
                 sigma,
                 t_vals,
                 rays["rays_d"],
+                # 렌더링에서 white background가 사용된다.
                 white_bkgd=white_bkgd,
             )
 
@@ -223,10 +256,14 @@ class LitNeRF(LitModel):
         rgb_fine = rendered_results[1][0]
         target = batch["target"]
 
+        # https://nuggy875.tistory.com/168
+        # coarse mlp와 fine mlp 의 loss 의 합을 최종 loss 로 사용
         loss0 = helper.img2mse(rgb_coarse, target)
         loss1 = helper.img2mse(rgb_fine, target)
         loss = loss1 + loss0
 
+        # https://blog-st.tistory.com/entry/MLDL-%EC%9D%B4%EB%AF%B8%EC%A7%80-%ED%92%88%EC%A7%88-%ED%8F%89%EA%B0%80-PSNR-SSIM
+        # MSE loss 를 이미지 품질 평가에 사용하는 PSNR 로 변환
         psnr0 = helper.mse2psnr(loss0)
         psnr1 = helper.mse2psnr(loss1)
 
@@ -236,6 +273,8 @@ class LitNeRF(LitModel):
 
         return loss
 
+    # validation 에 사용하는 함수
+    # result를 구하기만 하고 loss 는 구하지 않는다.
     def render_rays(self, batch, batch_idx):
         ret = {}
         rendered_results = self.model(
