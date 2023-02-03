@@ -21,6 +21,7 @@ import utils.store_image as store_image
 from src.model.interface import LitModel
 
 
+# 아예 NERF MLP와 동일
 @gin.configurable()
 class MipNeRFMLP(nn.Module):
     def __init__(
@@ -135,9 +136,12 @@ class MipNeRF(nn.Module):
                 setattr(self, name, value)
 
         super(MipNeRF, self).__init__()
+
+        # density activation이 기존 nerf와 약간 다름.
         self.density_activation = nn.Softplus()
         self.rgb_activation = nn.Sigmoid()
 
+        # coarse 와 fine을 따로 사용하지 않음
         self.mlp = MipNeRFMLP(min_deg_point, max_deg_point, deg_view)
 
     def forward(self, rays, randomized, white_bkgd, near, far):
@@ -169,6 +173,7 @@ class MipNeRF(nn.Module):
                     resample_padding=self.resample_padding,
                 )
 
+            # 기존 nerf와 여기만 다르다. PE 방식만 다름
             samples_enc = helper.integrated_pos_enc(
                 samples=samples, min_deg=self.min_deg_point, max_deg=self.max_deg_point
             )
@@ -179,12 +184,15 @@ class MipNeRF(nn.Module):
 
             raw_rgb, raw_density = self.mlp(samples_enc, viewdirs_enc)
 
+            # Add noise to density
             if randomized and (self.density_noise > 0):
                 raw_density += self.density_noise * torch.rand_like(raw_density)
 
             rgb = self.rgb_activation(raw_rgb)
             rgb = rgb * (1 + 2 * self.rgb_padding) - self.rgb_padding
             density = self.density_activation(raw_density + self.density_bias)
+            
+            # 볼륨 렌더링에서 distance 도 예측
             comp_rgb, distance, acc, weights = helper.volumetric_rendering(
                 rgb, density, t_vals, rays["rays_d"], white_bkgd=white_bkgd
             )

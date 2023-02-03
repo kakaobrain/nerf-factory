@@ -54,7 +54,8 @@ def sample_along_rays(
 
     return t_vals, (means, covs)
 
-
+# 기존 nerf 의 fine_model 을 위한 sample_pdf 와 조금 다름
+# weight 를 바로 사용하지 않고 blur 를 적용해 사용
 def resample_along_rays(
     rays_o,
     rays_d,
@@ -130,7 +131,8 @@ def sorted_piecewise_constant_pdf(
 
     return samples
 
-
+# MIP-NERF의 핵심 아이디어
+# 범위를 고려한 PE
 def integrated_pos_enc(samples, min_deg, max_deg):
     x, x_cov_diag = samples
     scales = torch.tensor([2**i for i in range(min_deg, max_deg)]).type_as(x)
@@ -239,6 +241,7 @@ def cylinder_to_gaussian(d, t0, t1, radius):
 def cast_rays(t_vals, origins, directions, radii, ray_shape):
     t0 = t_vals[..., :-1]
     t1 = t_vals[..., 1:]
+    # ray가 선이 아니라 cone 이 되었기 때문에 gaussian 관련 구현을 사용
     if ray_shape == "cone":
         gaussian_fn = conical_frustum_to_gaussian
     elif ray_shape == "cylinder":

@@ -38,10 +38,13 @@ def str2bool(v):
 
 @gin.configurable()
 def run(
+    # ginc : configs/[model]/[data].gin
     ginc: str,
     ginb: str,
+    # resume_training : True -> train mode, False -> eval mode
     resume_training: bool,
     ckpt_path: Optional[str],
+    # scene_name : "chair" 같은 scene 이름
     scene_name: Optional[str],
     datadir: Optional[str] = None,
     logbase: Optional[str] = None,

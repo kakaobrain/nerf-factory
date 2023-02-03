@@ -177,7 +177,6 @@ class NeRF(nn.Module):
                 mlp = self.coarse_mlp
 
             else:
-                # TODO: t_mids 의 의미는 sample_pdf 함수를 봐야 알 수 있을 듯
                 t_mids = 0.5 * (t_vals[..., 1:] + t_vals[..., :-1])
                 # dense pdf 에 따른 샘플링
                 t_vals, samples = helper.sample_pdf(
