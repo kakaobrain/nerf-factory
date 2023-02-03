@@ -225,6 +225,10 @@ class NeRF(nn.Module):
         return ret
 
 
+# https://wikidocs.net/157586
+# pytorch lightning 의 구현 구조
+# init, forward, training_step, validation_step, test_step, configure_optimizers,
+# + validation_epoch_end
 @gin.configurable()
 class LitNeRF(LitModel):
     def __init__(

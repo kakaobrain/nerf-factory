@@ -18,7 +18,7 @@ import utils.store_image as store_image
 reshape_2d = lambda x: x.reshape((x.shape[0], -1))
 clip_0_1 = lambda x: torch.clip(x, 0, 1).detach()
 
-
+# pytorch-lightning 의 module 을 이용한 wrapper 구현
 class LitModel(pl.LightningModule):
 
     # Utils to reorganize output values from evaluation steps,

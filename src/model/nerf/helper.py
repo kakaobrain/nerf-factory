@@ -152,6 +152,7 @@ def sorted_piecewise_constant_pdf(
 # fine_mlp 에서 사용하는 샘플링 함수
 def sample_pdf(bins, weights, origins, directions, t_vals, num_samples, randomized):
 
+    #weight 를 기반으로 확률적 샘플링을 수행
     t_samples = sorted_piecewise_constant_pdf(
         bins, weights, num_samples, randomized
     ).detach()
