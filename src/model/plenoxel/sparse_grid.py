@@ -29,7 +29,7 @@ from src.model.plenoxel.__global__ import (
 
 _C = _get_c_extension()
 
-
+# 2. voxel grid 모델
 class SparseGrid(nn.Module):
     def __init__(
         self,
@@ -55,8 +55,11 @@ class SparseGrid(nn.Module):
         assert (
             basis_dim >= 1 and basis_dim <= utils.MAX_SH_BASIS
         ), f"basis_dim 1-{utils.MAX_SH_BASIS} supported"
+        
+        # basis_dimension of SH 는 1, 4, or 9
         self.basis_dim = basis_dim
 
+        # TODO: MLP는 어디에 사용되는 거지?
         self.mlp_posenc_size = mlp_posenc_size
         self.mlp_width = mlp_width
 
@@ -64,8 +67,11 @@ class SparseGrid(nn.Module):
         assert (
             background_nlayers == 0 or background_nlayers > 1
         ), "Please use at least 2 MSI layers (trilerp limitation)"
+
+        # TODO: NERF++ 읽고 다시 이해하기
         self.background_reso = background_reso
 
+        # resolution = voxel grid 갯수 = [128, 128, 128]
         if isinstance(reso, int):
             reso = [reso] * 3
         else:
@@ -73,17 +79,23 @@ class SparseGrid(nn.Module):
                 len(reso) == 3
             ), "reso must be an integer or indexable object of 3 ints"
 
+        # TODO: z_order 가 뭐지?
+        # z_order 가 참이면서 voxel 이 정육면체면서, 변의 크기가 2의 제곱수가 아니면
+        # z_order 가 false
+        # == z_order 가 참이라는 것은 voxel grid가 정육면체면서 이쁘다는 것
         if use_z_order and not (
             reso[0] == reso[1] and reso[0] == reso[2] and utils.is_pow2(reso[0])
         ):
             use_z_order = False
 
+        # radius = [1.0, 1.0, 1.0]
         if isinstance(radius, float) or isinstance(radius, int):
             radius = [radius] * 3
         if isinstance(radius, torch.Tensor):
             radius = radius.to(device="cpu", dtype=torch.float32)
         else:
             radius = torch.tensor(radius, dtype=torch.float32, device="cpu")
+        # center = [0.0, 0.0, 0.0]
         if isinstance(center, torch.Tensor):
             center = center.to(device="cpu", dtype=torch.float32)
         else:
@@ -91,37 +103,57 @@ class SparseGrid(nn.Module):
 
         self.radius: torch.Tensor = radius  # CPU
         self.center: torch.Tensor = center  # CPU
+        # offset = 0.5
         self._offset = 0.5 * (1.0 - self.center / self.radius)
+        # scaling = [0.5, 0.5, 0.5]
         self._scaling = 0.5 / self.radius
 
+        # n3 = 128^3 = voxel 갯수
         n3: int = reduce(lambda x, y: x * y, reso)
+        # use_z_order가 True = voxel 이 정육면체면서 이쁨
         if use_z_order:
+            # morton :  N차원 공간의 좌표를 지역성을 보존하면서 한 차원으로 매핑하는 방법
             init_links = utils.gen_morton(
                 reso[0], device=device, dtype=torch.int32
             ).flatten()
         else:
+            # init_links = [0, 1, 2, 3, 4, 5, 6, 7, ..., n3 - 1]
             init_links = torch.arange(n3, device=device, dtype=torch.int32)
 
+        # use_sphere_bound가 참이면 전체 voxel을 사용하지 않고 구 형태의 일부분만 사용
         if use_sphere_bound:
+            # X = [0, 1, 2, 3, ..., 127] - 0.5 = [-0.5, 0.5, 1.5, 2.5, ..., 126.5]
             X = torch.arange(reso[0], dtype=torch.float32, device=device) - 0.5
             Y = torch.arange(reso[1], dtype=torch.float32, device=device) - 0.5
             Z = torch.arange(reso[2], dtype=torch.float32, device=device) - 0.5
+            # 128*128*128 개의 점에 대한 좌표값 생성
             X, Y, Z = torch.meshgrid(X, Y, Z)
+            # points = (128*128*128, 3)
             points = torch.stack((X, Y, Z), dim=-1).view(-1, 3)
+            #gsz = [128, 128, 128]
             gsz = torch.tensor(reso)
+            # roffset = [-127/128, -127/128, -127/128]
             roffset = 1.0 / gsz - 1.0
+            # rscaling = [2/128, 2/128, 2/128]
             rscaling = 2.0 / gsz
+            # 0~127 사이의 좌표를 -1~1 사이의 좌표로 변환
             points = torch.addcmul(
                 roffset.to(device=points.device),
                 points,
                 rscaling.to(device=points.device),
             )
-
+            
+            # 각 점의 vector L2 norm, 0~3^0.5 사이의 값
             norms = points.norm(dim=-1)
+            # 1 + 3^0.5 / 128 보다 작은 값의 점들은 True
             mask = norms <= 1.0 + (3**0.5) / gsz.max()
+            # true 인 값의 갯수
             self.capacity: int = mask.sum()
 
+            # data_mask.shape = (128*128*128)
             data_mask = torch.zeros(n3, dtype=torch.int32, device=device)
+
+            # mask 가 true 인 값들의 index
             idxs = init_links[mask].long()
             data_mask[idxs] = 1
             data_mask = torch.cumsum(data_mask, dim=0) - 1
@@ -129,8 +161,11 @@ class SparseGrid(nn.Module):
             init_links[mask] = data_mask[idxs].int()
             init_links[~mask] = -1
         else:
+            # self.capacity = voxel 의 개수
             self.capacity = n3
 
+        # density data 와 sh data 구현
+        # density data의 차원 수는 capacity
         self.register_parameter(
             "density_data",
             nn.Parameter(
@@ -140,8 +175,10 @@ class SparseGrid(nn.Module):
         )
 
         self.density_data.grad = torch.zeros_like(self.density_data)
+
         # Called sh for legacy reasons, but it's just the coeffients for whatever
         # spherical basis functions
+        # SH의 차원수는 capacity * (basis_dim * 3)
         self.register_parameter(
             "sh_data",
             nn.Parameter(
@@ -156,6 +193,7 @@ class SparseGrid(nn.Module):
         )
         self.sh_data.grad = torch.zeros_like(self.sh_data)
 
+        # TODO: basis_data는 무엇인가?
         self.register_parameter(
             "basis_data",
             nn.Parameter(
@@ -164,13 +202,18 @@ class SparseGrid(nn.Module):
             ),
         )
 
+        # TODO: background 설정은 NeRF++ 의 아이디어를 가져왔다고 함. 이 부분은 일단 패스하고 NeERF++ 를 읽은 다음에 채울 것
         self.background_links: Optional[torch.Tensor]
         self.background_data: Optional[torch.Tensor]
         if self.use_background:
+            # background_capacity : 2^17 = 256 * 256 * 2 = 65536 * 2
             background_capacity = (self.background_reso**2) * 2
+            # background_links = (0, 1, 2, ..., 65535, ..., 65535 + 65536)
             background_links = torch.arange(
                 background_capacity, dtype=torch.int32, device=device
             ).reshape(self.background_reso * 2, self.background_reso)
+            # reshaped background_links = (256*2, 256) = [[0, 1, 2, ..., 511], [512, ...,1023], ...]
+            # self.background_data = (65536 *2, n_layers, 4)
             self.register_buffer("background_links", background_links)
             self.register_parameter(
                 "background_data",

@@ -35,6 +35,8 @@ class PlenoxelOptim(torch.optim.Optimizer):
         return loss
 
 
+# https://xoft.tistory.com/9
+# Coarse to Fine
 @gin.configurable()
 class ResampleCallBack(pl.Callback):
     def __init__(self, upsamp_every):
@@ -59,6 +61,7 @@ class ResampleCallBack(pl.Callback):
 
             # NDC should be updated.
             camera_list = (
+                # generate camera list 여기서 호출함
                 pl_module.generate_camera_list(
                     intrinsics, extrinsics, None, image_sizes
                 )
@@ -68,6 +71,9 @@ class ResampleCallBack(pl.Callback):
 
             pl_module.reso_idx += 1
             reso = pl_module.reso_list[pl_module.reso_idx]
+            # TODO: resample 이해하기
+            # 아마도 density threshold 기반으로 voxel 필터링?
+            # 왜 camera list 를 필요로 할까?
             pl_module.model.resample(
                 reso=reso,
                 sigma_thresh=pl_module.density_thresh,
@@ -84,6 +90,7 @@ class ResampleCallBack(pl.Callback):
                 pl_module.model.density_data.data[:] += pl_module.upsample_density_add
 
 
+# 1. LitModel
 @gin.configurable()
 class LitPlenoxel(LitModel):
 
@@ -237,6 +244,7 @@ class LitPlenoxel(LitModel):
 
         dmodule = self.trainer.datamodule
 
+        # TODO: sparse_grid.py 에서 모델을 가져옴
         self.model = sparse_grid.SparseGrid(
             reso=self.reso_list[self.reso_idx],
             center=dmodule.scene_center,
@@ -253,6 +261,8 @@ class LitPlenoxel(LitModel):
         )
 
         if stage is None or stage == "fit":
+            # voxel grid 가 sh 와 density 2개가 있는듯
+            # 둘을 초기화
             self.model.sh_data.data[:] = 0.0
             self.model.density_data.data[:] = (
                 0.0 if self.lr_fg_begin_step > 0 else self.init_sigma
@@ -268,6 +278,8 @@ class LitPlenoxel(LitModel):
     ):
         dmodule = self.trainer.datamodule
         return [
+            # TODO: camera model이 왜 필요한지 이해하기
+            # 그냥 input image 와 view scene 의 direction만 있으면 되지 않나?
             dataclass.Camera(
                 torch.from_numpy(
                     self.extrinsics[i] if extrinsics is None else extrinsics[i]
@@ -283,6 +295,7 @@ class LitPlenoxel(LitModel):
             for i in dmodule.i_train
         ]
 
+    # learning rate 조절 함수
     def get_expon_lr_func(
         self, lr_init, lr_final, lr_delay_steps, lr_delay_mult, max_steps
     ):
@@ -309,6 +322,8 @@ class LitPlenoxel(LitModel):
     def training_step(self, batch, batch_idx):
         gstep = self.curr_step
 
+        # render_rays 함수를 closure로 만들어서 optimizer에 넣어줌
+        # 차이점은 grad 를 계산하는 부분이 있다는 것
         def closure():
 
             if self.lr_fg_begin_step > 0 and gstep == self.lr_fg_begin_step:
@@ -319,8 +334,10 @@ class LitPlenoxel(LitModel):
             rays_d = batch["rays_d"].to(torch.float32)
             target = batch["target"].to(torch.float32)
 
+            # TODO: Rays class 이해하기
             rays = dataclass.Rays(rays_o.contiguous(), rays_d.contiguous())
 
+            # TODO: voxel 기반 볼륨 렌더링
             rgb = self.model.volume_render_fused(
                 rays,
                 target,
@@ -334,7 +351,12 @@ class LitPlenoxel(LitModel):
 
             self.log("train_psnr", psnr, on_step=True, prog_bar=True, logger=True)
 
+
+            # loss function 이 총 5가지인듯
             if self.lambda_tv > 0.0:
+                # TODO: voxel 기반 모델 이해하기
+                # 아마도 모델 내에서 사용되는 backpropagataion 을 위한
+                # grad 계산 함수일듯?
                 self.model.inplace_tv_grad(
                     self.model.density_data.grad,
                     scaling=self.lambda_tv,
@@ -390,6 +412,7 @@ class LitPlenoxel(LitModel):
         lr_sigma_bg = self.lr_sigma_bg_func(gstep - self.lr_basis_begin_step)
         lr_color_bg = self.lr_color_bg_func(gstep - self.lr_basis_begin_step)
 
+        # TODO: optimize functions 이해하기
         if gstep >= self.lr_fg_begin_step:
             self.model.optim_density_step(
                 lr_sigma, beta=self.rms_beta, optim=self.sigma_optim
@@ -433,6 +456,8 @@ class LitPlenoxel(LitModel):
             sparsity_loss=self.lambda_sparsity,
             randomize=randomize,
         )
+
+        # train step 과의 차이점 : depth rendering을 함
         depth = self.model.volume_render_depth(
             rays,
             self.model.opt.sigma_thresh,
@@ -501,6 +526,8 @@ class LitPlenoxel(LitModel):
         self.log("val/lpips", lpips_mean.item(), on_epoch=True)
         return super().validation_epoch_end(outputs)
 
+    # TODO: LitModel 의 구현 방식인지 찾아보기
+    # 아마 맞을듯. 이렇게 구현하면 Trainer.train에서 자동으로 사용할듯
     def on_save_checkpoint(self, checkpoint) -> None:
 
         checkpoint["reso_idx"] = self.reso_idx

@@ -49,6 +49,7 @@ def is_pow2(x: int):
 
 
 # Morton code (Z-order curve)
+# N차원 공간의 좌표를 지역성을 보존하면서 한 차 원으로 매핑하는 방법
 def _expand_bits(v):
     v = (v | (v << 16)) & 0x030000FF
     v = (v | (v << 8)) & 0x0300F00F
@@ -65,7 +66,6 @@ def _unexpand_bits(v):
     v = (v | (v >> 16)) & 0x0000FFFF
     return v
 
-
 def morton_code_3(x, y, z):
     xx = _expand_bits(x)
     yy = _expand_bits(y)
@@ -79,11 +79,17 @@ def inv_morton_code_3(code):
     z = _unexpand_bits(code)
     return x, y, z
 
-
+# D : voxel 변의 길이
 def gen_morton(D, device, dtype=torch.long):
+    # 변의 길이가 2^n이 아니면 에러
     assert is_pow2(D), "Morton code requires power of 2 reso"
+    # arr = [0, 1, 2, 3, ..., 127]
     arr = torch.arange(D, device=device, dtype=dtype)
+    # X.shape = (128, 128, 128)
+    # X = [[[0, 1, 2, ..., 127], ...], ...], ... ]
+    # X 는 128*128 개의 (y,z) 에 대한 128개씩의 X 좌표들
     X, Y, Z = torch.meshgrid(arr, arr, arr)
+    # X,Y,Z 좌표를 한 차원으로 매핑한 결과가 mort
     mort = morton_code_3(X, Y, Z)
     return mort
 
