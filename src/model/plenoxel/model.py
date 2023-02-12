@@ -267,9 +267,11 @@ class LitPlenoxel(LitModel):
             self.model.density_data.data[:] = (
                 0.0 if self.lr_fg_begin_step > 0 else self.init_sigma
             )
+            # 360도 view 면 background_data도 초기화
             if self.model.use_background:
                 self.model.background_data.data[..., -1] = self.init_sigma_bg
 
+        # TODO: 카메라 세팅 관련 변수인듯?
         self.ndc_coeffs = dmodule.ndc_coeffs
         return super().setup(stage)
 

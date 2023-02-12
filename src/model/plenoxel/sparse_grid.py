@@ -193,7 +193,7 @@ class SparseGrid(nn.Module):
         )
         self.sh_data.grad = torch.zeros_like(self.sh_data)
 
-        # TODO: basis_data는 무엇인가?
+        # 아마도 basis를 SH 대신 mlp로 구현할 경우에 사용되는 MLP weight 인 것 같음
         self.register_parameter(
             "basis_data",
             nn.Parameter(
@@ -203,6 +203,7 @@ class SparseGrid(nn.Module):
         )
 
         # TODO: background 설정은 NeRF++ 의 아이디어를 가져왔다고 함. 이 부분은 일단 패스하고 NeERF++ 를 읽은 다음에 채울 것
+        # 360도 view 를 구현하기 위해서 사용된다고 함
         self.background_links: Optional[torch.Tensor]
         self.background_data: Optional[torch.Tensor]
         if self.use_background:
