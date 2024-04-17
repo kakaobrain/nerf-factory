@@ -305,10 +305,26 @@ class LitMipNeRF(LitModel):
         targets = self.alter_gather_cat(outputs, "target", val_image_sizes)
         psnr_mean = self.psnr_each(rgbs, targets).mean()
         ssim_mean = self.ssim_each(rgbs, targets).mean()
+        msssim_mean = self.msssim_each(rgbs, targets).mean()
+        gmsd_mean = self.gmsd_each(rgbs, targets).mean()
+        msgmsd_mean = self.msgmsd_each(rgbs, targets).mean()
+        mdsi_mean = self.mdsi_each(rgbs, targets).mean()
+        haarpsi_mean = self.haarpsi_each(rgbs, targets).mean()
+        vsi_mean = self.vsi_each(rgbs, targets).mean()
+        fsim_mean = self.fsim_each(rgbs, targets).mean()
         lpips_mean = self.lpips_each(rgbs, targets).mean()
+        fid_mean = self.fid_each(rgbs, targets).mean()
         self.log("val/psnr", psnr_mean.item(), on_epoch=True, sync_dist=True)
         self.log("val/ssim", ssim_mean.item(), on_epoch=True, sync_dist=True)
+        self.log("val/msssim", msssim_mean.item(), on_epoch=True,  sync_dist=True)
+        self.log("val/gmsd", gmsd_mean.item(), on_epoch=True,  sync_dist=True)
+        self.log("val/msgmsd", msgmsd_mean.item(), on_epoch=True,  sync_dist=True)
+        self.log("val/mdsi", mdsi_mean.item(), on_epoch=True,  sync_dist=True)
+        self.log("val/haarpsi", haarpsi_mean.item(), on_epoch=True,  sync_dist=True)
+        self.log("val/vsi", vsi_mean.item(), on_epoch=True,  sync_dist=True)
+        self.log("val/fsim", fsim_mean.item(), on_epoch=True,  sync_dist=True)
         self.log("val/lpips", lpips_mean.item(), on_epoch=True, sync_dist=True)
+        self.log("val/fid", fid_mean.item(), on_epoch=True,  sync_dist=True)
 
     def test_epoch_end(self, outputs):
         dmodule = self.trainer.datamodule
@@ -321,13 +337,29 @@ class LitMipNeRF(LitModel):
         targets = self.alter_gather_cat(outputs, "target", all_image_sizes)
         psnr = self.psnr(rgbs, targets, dmodule.i_train, dmodule.i_val, dmodule.i_test)
         ssim = self.ssim(rgbs, targets, dmodule.i_train, dmodule.i_val, dmodule.i_test)
+        msssim = self.msssim(rgbs, targets, dmodule.i_train, dmodule.i_val, dmodule.i_test)
+        gmsd = self.gmsd(rgbs, targets, dmodule.i_train, dmodule.i_val, dmodule.i_test)
+        msgmsd = self.msgmsd(rgbs, targets, dmodule.i_train, dmodule.i_val, dmodule.i_test)
+        mdsi = self.mdsi(rgbs, targets, dmodule.i_train, dmodule.i_val, dmodule.i_test)
+        haarpsi = self.haarpsi(rgbs, targets, dmodule.i_train, dmodule.i_val, dmodule.i_test)
+        vsi = self.vsi(rgbs, targets, dmodule.i_train, dmodule.i_val, dmodule.i_test)
+        fsim = self.fsim(rgbs, targets, dmodule.i_train, dmodule.i_val, dmodule.i_test)
         lpips = self.lpips(
             rgbs, targets, dmodule.i_train, dmodule.i_val, dmodule.i_test
         )
+        fid = self.fid(rgbs, targets, dmodule.i_train, dmodule.i_val, dmodule.i_test)
 
         self.log("test/psnr", psnr["test"], on_epoch=True)
         self.log("test/ssim", ssim["test"], on_epoch=True)
+        self.log("test/msssim", msssim["test"], on_epoch=True)
+        self.log("test/gmsd", gmsd["test"], on_epoch=True)
+        self.log("test/msgmsd", msgmsd["test"], on_epoch=True)
+        self.log("test/mdsi", mdsi["test"], on_epoch=True)
+        self.log("test/haarpsi", haarpsi["test"], on_epoch=True)
+        self.log("test/vsi", vsi["test"], on_epoch=True)
+        self.log("test/fsim", fsim["test"], on_epoch=True)
         self.log("test/lpips", lpips["test"], on_epoch=True)
+        self.log("test/fid", fid["test"], on_epoch=True)
 
         if self.trainer.is_global_zero:
             image_dir = os.path.join(self.logdir, "render_model")
@@ -335,6 +367,6 @@ class LitMipNeRF(LitModel):
             store_image.store_image(image_dir, rgbs)
 
             result_path = os.path.join(self.logdir, "results.json")
-            self.write_stats(result_path, psnr, ssim, lpips)
+            self.write_stats(result_path, psnr, ssim, msssim, gmsd, msgmsd, mdsi, haarpsi, vsi, fsim, lpips, fid)
 
-        return psnr, ssim, lpips
+        return psnr, ssim, msssim, gmsd, msgmsd, mdsi, haarpsi, vsi, fsim, lpips, fid
