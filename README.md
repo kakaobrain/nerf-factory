@@ -1,3 +1,12 @@
+# Deprecated Repository
+
+This repository is no longer maintained. Please note that all further development and updates have been moved to a new repository.
+
+You can find the new repository **[here](https://github.com/POSTECH-CVLab/NeRF-Factory)**.
+
+Thank you for your understanding and continued support.
+
+
 # NeRF-Factory: An awesome PyTorch NeRF collection
 
 ![logo](https://user-images.githubusercontent.com/33657821/191188990-d15744b5-c030-48ac-9669-2a0600bacdec.png)
